@@ -2,12 +2,13 @@
 # @Author: Charles Starr
 # @Date:   2016-07-10 12:25:59
 # @Last Modified by:   Charles Starr
-# @Last Modified time: 2016-08-03 00:09:00
+# @Last Modified time: 2016-08-09 10:09:38
 
 import getpass
 import spotipy
 import spotipy.util as util
 import sqlite3
+import numpy as np
 
 
 
@@ -50,7 +51,7 @@ class User(object):
 			artist_info = track['artists'][0]
 			artist_name = artist_info['name']
 			artists.append(artist_name)
-		return artists
+		return set(artists)
 
 	def common_artists(self, artist_set):
 		#checks for common entries between artist set and user artists
@@ -59,6 +60,44 @@ class User(object):
 			if artist in artist_set:
 				common_artists.append(artist)
 		return set(common_artists)
+
+	def dp_common_artists(self, artist_set):
+		#implements dynamic programming algorithm to match artists with more tolerance for mismatch
+		'''REFACTOR SO THAT ONE FUNCTION MAKES MATRIX, ONE ASSESSES MATCHINESS, and ONE KEEPS TRACK'''
+		matches = []
+		for playlist_artist in self.artists:
+			for local_artist in artist_set:
+				dp_matrix = self.dp_matrix(playlist_artist, local_artist)
+				if self.longest_alignment(dp_matrix):
+					matches.append((playlist_artist, local_artist))
+		return matches
+
+	def dp_matrix(self, artist_one, artist_two):
+		#creates the dp matrix from the two artist inputs and returns it.
+		dp_matrix = np.matrix([[0]*len(artist_one) for j in range(len(artist_two))])
+		for i, one_letter in enumerate(artist_one):
+			for j, two_letter in enumerate(artist_two):
+				if one_letter == two_letter:
+					#fill matrix top to bottom, left to right
+					dp_matrix[j, i] = 1
+		return dp_matrix
+
+	def longest_alignment(self, dp_matrix):
+		#finds longest diagonal sequence in matrix and returns it
+		for i in range(dp_matrix.shape[1]):
+			for j in range(dp_matrix.shape[0]):
+				match_count = 0
+				while dp_matrix[j,i]:
+					match_count += 1
+					if match_count < 6:
+						if i < dp_matrix.shape[1] - 1 and j < dp_matrix.shape[0] - 1:
+							i += 1
+							j += 1
+						else:
+							break
+					else:
+						return True
+		return False
 
 class Event_Calendar(object):
 	#opens up the database and extracts events based on a list of artists
