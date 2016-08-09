@@ -2,11 +2,13 @@
 # @Author: Charles Starr
 # @Date:   2016-07-10 12:25:59
 # @Last Modified by:   Charles Starr
-# @Last Modified time: 2016-07-26 23:00:19
+# @Last Modified time: 2016-08-03 00:09:00
 
 import getpass
 import spotipy
 import spotipy.util as util
+import sqlite3
+
 
 
 class User(object):
@@ -57,5 +59,44 @@ class User(object):
 			if artist in artist_set:
 				common_artists.append(artist)
 		return set(common_artists)
+
+class Event_Calendar(object):
+	#opens up the database and extracts events based on a list of artists
+	def __init__(self, db_file):
+		self.db_file = db_file
+		self.artist_dic = self.get_artist_ids()
+
+	def get_artist_ids(self):
+		#creates and returns artist_name:artist_id dictionary
+		conn = sqlite3.connect(self.db_file)
+		c = conn.cursor()
+		c.execute('''SELECT * FROM artists''')
+		artist_dic = {x[1]:x[0] for x in c.fetchall()}
+		conn.close()
+		return artist_dic
+
+	def artist_set(self):
+		#returns a set of artists for use in comparison with user playlist artists
+		return set(self.artist_dic.keys())
+
+	def events_by_artist(self, common_artists):
+		#finds the shows associated with common user artists
+		conn = sqlite3.connect(self.db_file)
+		c = conn.cursor()
+		matched_events = []
+		for artist in common_artists:
+			c.execute('''SELECT 
+							artists.artist_name,
+							venues.venue_name,
+							events.show_datetime
+						FROM
+							artists
+							INNER JOIN events ON artists.artist_id = events.artist_id
+							INNER JOIN venues on events.venue_id = venues.venue_id
+						WHERE 
+							artists.artist_id = ?''', (self.artist_dic[artist],))
+			matched_events.extend(c.fetchall())
+		conn.close()
+		return matched_events
 
 
