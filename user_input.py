@@ -2,7 +2,7 @@
 # @Author: Charles Starr
 # @Date:   2016-07-10 12:25:59
 # @Last Modified by:   Charles Starr
-# @Last Modified time: 2016-08-09 10:09:38
+# @Last Modified time: 2016-08-09 12:34:48
 
 import getpass
 import spotipy
@@ -66,6 +66,10 @@ class User(object):
 		'''REFACTOR SO THAT ONE FUNCTION MAKES MATRIX, ONE ASSESSES MATCHINESS, and ONE KEEPS TRACK'''
 		matches = []
 		for playlist_artist in self.artists:
+			try:
+				print playlist_artist
+			except:
+				continue
 			for local_artist in artist_set:
 				dp_matrix = self.dp_matrix(playlist_artist, local_artist)
 				if self.longest_alignment(dp_matrix):
@@ -84,19 +88,21 @@ class User(object):
 
 	def longest_alignment(self, dp_matrix):
 		#finds longest diagonal sequence in matrix and returns it
-		for i in range(dp_matrix.shape[1]):
-			for j in range(dp_matrix.shape[0]):
-				match_count = 0
-				while dp_matrix[j,i]:
-					match_count += 1
-					if match_count < 6:
-						if i < dp_matrix.shape[1] - 1 and j < dp_matrix.shape[0] - 1:
-							i += 1
-							j += 1
-						else:
-							break
+		if 0 in dp_matrix.shape:
+			return False
+		for j in range(dp_matrix.shape[0]):
+			match_count = 0
+			i = 0
+			while dp_matrix[j,i]:
+				match_count += 1
+				if match_count == dp_matrix.shape[1]:
+					return True
+				else:
+					if i < dp_matrix.shape[1] - 1 and j < dp_matrix.shape[0] - 1:
+						i += 1
+						j += 1
 					else:
-						return True
+						break
 		return False
 
 class Event_Calendar(object):
