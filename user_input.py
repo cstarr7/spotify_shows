@@ -2,21 +2,78 @@
 # @Author: Charles Starr
 # @Date:   2016-07-10 12:25:59
 # @Last Modified by:   Charles Starr
-# @Last Modified time: 2016-08-09 12:34:48
+# @Last Modified time: 2016-08-09 23:10:31
 
-import getpass
 import spotipy
 import spotipy.util as util
 import sqlite3
 import numpy as np
+from lxml import etree
 
 
 
 class User(object):
-	#object instance will store user/pass and create authentication token for spotify
+	#generic user object contains common code 
 	def __init__(self):
+		self.artists = []
+
+
+	def common_artists(self, artist_set):
+		#checks for common entries between artist set and user artists
+		common_artists = []
+		for artist in self.artists:
+			if artist in artist_set:
+				common_artists.append(artist)
+		return set(common_artists)
+
+	def dp_common_artists(self, artist_set):
+		#implements dynamic programming algorithm to match artists with more tolerance for mismatch
+		matches = []
+		for playlist_artist in self.artists:
+			try:
+				print playlist_artist
+			except:
+				continue
+			for local_artist in artist_set:
+				dp_matrix = self.dp_matrix(playlist_artist, local_artist)
+				if self.longest_alignment(dp_matrix):
+					matches.append(local_artist)
+		return matches
+
+	def dp_matrix(self, artist_one, artist_two):
+		#creates the dp matrix from the two artist inputs and returns it.
+		dp_matrix = np.matrix([[0]*len(artist_one) for j in range(len(artist_two))])
+		for i, one_letter in enumerate(artist_one):
+			for j, two_letter in enumerate(artist_two):
+				if one_letter == two_letter:
+					#fill matrix top to bottom, left to right
+					dp_matrix[j, i] = 1
+		return dp_matrix
+
+	def longest_alignment(self, dp_matrix):
+		#finds longest diagonal sequence in matrix and returns it
+		if 0 in dp_matrix.shape:
+			return False
+		for j in range(dp_matrix.shape[0]):
+			match_count = 0
+			i = 0
+			while dp_matrix[j,i]:
+				match_count += 1
+				if match_count == dp_matrix.shape[1]:
+					return True
+				else:
+					if i < dp_matrix.shape[1] - 1 and j < dp_matrix.shape[0] - 1:
+						i += 1
+						j += 1
+					else:
+						break
+		return False
+
+class Spot_User(User):
+	#subclass contains methods specifically for spotify users
+	def __init__(self):
+		super(Spot_User, self).__init__()
 		self.username = raw_input('username: ')
-		self.password = getpass.getpass('password: ')
 		self.token = self.get_token()
 		self.sp = spotipy.Spotify(auth=self.token)
 		self.playlists = self.get_playlists()
@@ -53,57 +110,16 @@ class User(object):
 			artists.append(artist_name)
 		return set(artists)
 
-	def common_artists(self, artist_set):
-		#checks for common entries between artist set and user artists
-		common_artists = []
-		for artist in self.artists:
-			if artist in artist_set:
-				common_artists.append(artist)
-		return set(common_artists)
+class Tunes_User(User):
+	#subclass for itunes users
+	def __init__(self, library_xml):
+		super(Tunes_User, self).__init__()
+		self.artists = self.get_artists(library_xml)
 
-	def dp_common_artists(self, artist_set):
-		#implements dynamic programming algorithm to match artists with more tolerance for mismatch
-		'''REFACTOR SO THAT ONE FUNCTION MAKES MATRIX, ONE ASSESSES MATCHINESS, and ONE KEEPS TRACK'''
-		matches = []
-		for playlist_artist in self.artists:
-			try:
-				print playlist_artist
-			except:
-				continue
-			for local_artist in artist_set:
-				dp_matrix = self.dp_matrix(playlist_artist, local_artist)
-				if self.longest_alignment(dp_matrix):
-					matches.append((playlist_artist, local_artist))
-		return matches
-
-	def dp_matrix(self, artist_one, artist_two):
-		#creates the dp matrix from the two artist inputs and returns it.
-		dp_matrix = np.matrix([[0]*len(artist_one) for j in range(len(artist_two))])
-		for i, one_letter in enumerate(artist_one):
-			for j, two_letter in enumerate(artist_two):
-				if one_letter == two_letter:
-					#fill matrix top to bottom, left to right
-					dp_matrix[j, i] = 1
-		return dp_matrix
-
-	def longest_alignment(self, dp_matrix):
-		#finds longest diagonal sequence in matrix and returns it
-		if 0 in dp_matrix.shape:
-			return False
-		for j in range(dp_matrix.shape[0]):
-			match_count = 0
-			i = 0
-			while dp_matrix[j,i]:
-				match_count += 1
-				if match_count == dp_matrix.shape[1]:
-					return True
-				else:
-					if i < dp_matrix.shape[1] - 1 and j < dp_matrix.shape[0] - 1:
-						i += 1
-						j += 1
-					else:
-						break
-		return False
+	def get_artists(self, library_xml):
+		tree = etree.parse(library_xml)
+		artists = tree.xpath('//plist/dict/dict/dict/key[text()="Artist"]/following-sibling::*[1]/text()')
+		return set(artists)
 
 class Event_Calendar(object):
 	#opens up the database and extracts events based on a list of artists

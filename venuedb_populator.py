@@ -2,7 +2,7 @@
 # @Author: Charles Starr
 # @Date:   2016-07-18 22:16:49
 # @Last Modified by:   Charles Starr
-# @Last Modified time: 2016-07-25 22:19:25
+# @Last Modified time: 2016-08-09 13:26:58
 
 import requests
 from lxml import html
@@ -198,5 +198,3 @@ def time_conversion(time):
 	if 'p' in time and hours != 12:
 		hours += 12
 	return datetime.time(hours, minutes)
-
-main()

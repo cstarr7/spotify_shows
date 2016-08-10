@@ -2,23 +2,25 @@
 # @Author: Charles Starr
 # @Date:   2016-07-10 12:49:18
 # @Last Modified by:   Charles Starr
-# @Last Modified time: 2016-07-26 22:59:05
+# @Last Modified time: 2016-08-09 23:10:58
 
 import user_input
-import sqlite3
+#import venuedb_populator
+#import tm_events
 
 
 def main():
-	artist_set = get_artists('no_shows.sqlite')
-	user = user_input.User()
-	print user.common_artists(artist_set)
+	#venuedb_populator.main()
+	#tm_events.main()
+	calendar = user_input.Event_Calendar('no_shows.sqlite')
+	user = user_input.Tunes_User('my_library.xml')
+	common_artists = user.dp_common_artists(calendar.artist_set())
+	events = calendar.events_by_artist(common_artists)
+	print events
 
-
-def get_artists(db_file):
-	#retrieves artists from the db
-	conn = sqlite3.connect(db_file)
-	c = conn.cursor()
-	artist_blob = c.execute('''SELECT artist_name FROM artists''')
-	return set([x[0] for x in artist_blob])
-
+def force_tm():
+	try:
+		tm_events.main()
+	except:
+		force_time()
 main()

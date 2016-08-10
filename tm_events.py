@@ -2,7 +2,7 @@
 # @Author: Charles Starr
 # @Date:   2016-07-27 21:44:47
 # @Last Modified by:   Charles Starr
-# @Last Modified time: 2016-07-30 15:17:34
+# @Last Modified time: 2016-08-09 13:26:52
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -119,7 +119,7 @@ def event_table_update(db_name, events, artist_dic, venue_dic):
 	c = conn.cursor()
 	for event in events:
 		try:
-			date = datetime.date(int(event['Date'][6:8]), int(event['Date'][:2]), int(event['Date'][3:5]))
+			date = datetime.date(int('20' + event['Date'][6:8]), int(event['Date'][:2]), int(event['Date'][3:5]))
 			time = time_conversion(event['Time'])
 			event_time = datetime.datetime.combine(date,time)
 			c.execute('''INSERT INTO events (artist_id, venue_id, show_datetime) VALUES (?, ?, ?)''', 
