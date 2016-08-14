@@ -2,7 +2,7 @@
 # @Author: Charles Starr
 # @Date:   2016-07-27 21:44:47
 # @Last Modified by:   Charles Starr
-# @Last Modified time: 2016-08-13 19:59:27
+# @Last Modified time: 2016-08-14 12:59:31
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -13,8 +13,8 @@ import sqlite3
 import time as tm
 from helpers import *
 
-def main():
-	db_file = 'no_shows.sqlite'
+def main(db_filename):
+	db_file = db_filename
 	driver = webdriver.Firefox()
 	get_tm_events(driver, '70114', 'n186')
 	events = extract_events(driver)
